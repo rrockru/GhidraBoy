@@ -13,8 +13,9 @@
 // limitations under the License.
 package fi.gekkio.ghidraboy;
 
+import generic.hash.HashUtilities;
+
 import ghidra.app.util.bin.ByteProvider;
-import ghidra.util.HashUtilities;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
