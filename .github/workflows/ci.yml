@@ -36,8 +36,14 @@ jobs:
             ghidra_build_date: "20250731"
             ghidra_sha256: "59b657c39c2113d65e591c1087b77d85f6f7a11e97f2f4a0c9e7188510d07ea0"
           - ghidra_version: "11.4.2"
-            ghidra_build_date: "20250826"
+            ghidra_build_date: "20250827"
             ghidra_sha256: "795a02076af16257bd6f3f4736c4fc152ce9ff1f95df35cd47e2adc086e037a6"
+          - ghidra_version: "12.0"
+            ghidra_build_date: "20251208"
+            ghidra_sha256: "af43e8cfb2fa4490cf6020c3a2bde25c159d83f45236a0542688a024e8fc1941"
+          - ghidra_version: "12.0.1"
+            ghidra_build_date: "20260115"
+            ghidra_sha256: "85bd2990945f3a78df4d1e09f1bb1f40ab77be3bac62c6e7678900788c7f0f41"    
     env:
       GHIDRA_VERSION: ${{ matrix.ghidra_version }}
       GHIDRA_BUILD_DATE: ${{ matrix.ghidra_build_date }}
