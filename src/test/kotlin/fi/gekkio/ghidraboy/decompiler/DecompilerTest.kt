@@ -330,45 +330,6 @@ class DecompilerTest : IntegrationTest() {
         )
     }
 
-    @Test
-    fun `DAA decompilation`() {
-        val f =
-            assembleFunction(
-                address(0x0000),
-                """
-                LD A, 0x01
-                ADD C
-                DAA
-                LD C, A
-                RET Z
-                INC C
-                RET
-                """.trimIndent(),
-                name = "daa",
-                params =
-                    listOf(
-                        parameter("value", u8, register("C")),
-                    ),
-                returnParam = returnParameter(u8, register("C")),
-            )
-        assertDecompiled(
-            f,
-            """
-            byte daa(byte value)
-            {
-                char cVar1;
-                byte bVar2;
-                cVar1 = daaOperand(value + 1,0xfe < value,((value & 0xf) + 1 & 0x10) != 0,0);
-                bVar2 = value + 1 + cVar1;
-                if (bVar2 == 0) {
-                    return bVar2;
-                }
-                return bVar2 + 1;
-            }
-            """.trimIndent(),
-        )
-    }
-
     @BeforeAll
     override fun beforeAll() {
         super.beforeAll()

@@ -19,8 +19,6 @@ import ghidra.app.util.OptionUtils;
 import ghidra.app.util.bin.ByteProvider;
 import ghidra.app.util.importer.MessageLog;
 import ghidra.app.util.opinion.*;
-import ghidra.framework.model.DomainObject;
-import ghidra.framework.model.Project;
 import ghidra.program.database.function.OverlappingFunctionException;
 import ghidra.program.model.address.AddressOverflowException;
 import ghidra.program.model.address.AddressSet;
@@ -46,7 +44,7 @@ import static ghidra.app.util.MemoryBlockUtils.createInitializedBlock;
 import static ghidra.app.util.MemoryBlockUtils.createUninitializedBlock;
 import static ghidra.program.model.data.DataUtilities.createData;
 
-public class GameBoyLoader extends AbstractProgramLoader {
+public abstract class CommonGameBoyLoader extends AbstractProgramLoader {
     private static final String OPT_HW_BLOCKS = "Create GB hardware memory blocks";
     private static final String OPT_DATA_TYPES = "Create GB data types";
     private static final String OPT_KIND = "Hardware type";
@@ -75,77 +73,56 @@ public class GameBoyLoader extends AbstractProgramLoader {
         return result;
     }
 
-    @Override
-    public List<Option> getDefaultOptions(ByteProvider provider, LoadSpec loadSpec, DomainObject domainObject, boolean isLoadIntoProgram, boolean mirrorFsLayout) {
-        var result = super.getDefaultOptions(provider, loadSpec, domainObject, isLoadIntoProgram, mirrorFsLayout);
-        result.add(new Option(OPT_HW_BLOCKS, true));
-        result.add(new Option(OPT_DATA_TYPES, true));
+    protected List<Option> commonGameBoyGetDefaultOptions(ByteProvider provider, List<Option> options) {
+        options.add(new Option(OPT_HW_BLOCKS, true));
+        options.add(new Option(OPT_DATA_TYPES, true));
         try {
             var bootRom = detectBootRom(provider);
             if (bootRom.isPresent()) {
-                result.add(new GameBoyKindOption(OPT_KIND, bootRom.get()));
-                return result;
+                options.add(new GameBoyKindOption(OPT_KIND, bootRom.get()));
+                return options;
             }
             var rom = detectRom(provider);
             if (rom.isPresent()) {
-                result.add(new GameBoyKindOption(OPT_KIND, rom.get()));
-                return result;
+                options.add(new GameBoyKindOption(OPT_KIND, rom.get()));
+                return options;
             }
         } catch (IOException ignored) {
         }
-        result.add(new GameBoyKindOption(OPT_KIND, GameBoyKind.GB));
-        return result;
+        options.add(new GameBoyKindOption(OPT_KIND, GameBoyKind.GB));
+        return options;
     }
 
-    @Override
-    protected List<Loaded<Program>> loadProgram(ImporterSettings settings) throws IOException, LoadException, CancelledException {
-        var result = new ArrayList<Loaded<Program>>();
-        var log = settings.log();
-        var options = settings.options();
-
-        var program = createProgram(settings);
-        var success = false;
-        try {
-            var kind = OptionUtils.getOption(OPT_KIND, options, GameBoyKind.GB);
-            if (OptionUtils.getBooleanOptionValue(OPT_DATA_TYPES, options, true)) {
-                int id = program.startTransaction("Create GB data types");
-                try {
-                    DataTypes.addAll(program.getDataTypeManager());
-                } finally {
-                    program.endTransaction(id, true);
-                }
-            }
-            loadInto(program, settings);
-            createDefaultMemoryBlocks(program, settings);
-
-            if (OptionUtils.getBooleanOptionValue(OPT_HW_BLOCKS, options, true)) {
-                int id = program.startTransaction("Create GB hardware memory blocks");
-                try {
-                    addHardwareBlocks(program, kind, log);
-                    populateHardwareBlocks(program, kind);
-                } catch (InvalidInputException | CodeUnitInsertionException e) {
-                    log.appendException(e);
-                } finally {
-                    program.endTransaction(id, true);
-                }
-            }
-            success = result.add(new Loaded<>(program, settings));
-        } finally {
-            if (!success) {
-                program.release(settings.consumer());
+    protected void commonGameBoyAddDataTypes(Program program, List<Option> options) {
+        var kind = OptionUtils.getOption(OPT_KIND, options, GameBoyKind.GB);
+        if (OptionUtils.getBooleanOptionValue(OPT_DATA_TYPES, options, true)) {
+            int id = program.startTransaction("Create GB data types");
+            try {
+                DataTypes.addAll(program.getDataTypeManager());
+            } finally {
+                program.endTransaction(id, true);
             }
         }
-        return result;
     }
 
-    @Override
-    protected void loadProgramInto(Program program, ImporterSettings settings) throws IOException, LoadException, CancelledException {
-        var as = program.getAddressFactory().getDefaultAddressSpace();
-        var log = settings.log();
-        var monitor = settings.monitor();
-        var options = settings.options();
-        var provider = settings.provider();
+    protected void commonGameBoyAddHardwareBlocks(Program program, List<Option> options, MessageLog log) {
+        var kind = OptionUtils.getOption(OPT_KIND, options, GameBoyKind.GB);
+        if (OptionUtils.getBooleanOptionValue(OPT_HW_BLOCKS, options, true)) {
+            int id = program.startTransaction("Create GB hardware memory blocks");
+            try {
+                addHardwareBlocks(program, kind, log);
+                populateHardwareBlocks(program, kind);
+            } catch (InvalidInputException | CodeUnitInsertionException e) {
+                log.appendException(e);
+            } finally {
+                program.endTransaction(id, true);
+            }
+        }
+    }
 
+    protected void commonGameBoyLoadProgramInto(ByteProvider provider, List<Option> options, MessageLog log, Program program, TaskMonitor monitor) throws IOException, CancelledException {
+        var as = program.getAddressFactory().getDefaultAddressSpace();
+        
         var bootRom = detectBootRom(provider);
         var rom = MemoryBlockUtils.createFileBytes(program, provider, monitor);
 

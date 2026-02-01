@@ -34,6 +34,7 @@ val ghidraDir =
 
 val ghidraProps = Properties().apply { file("$ghidraDir/Ghidra/application.properties").inputStream().use { load(it) } }
 val ghidraVersion = ghidraProps.getProperty("application.version")!!
+val ghidraVersionMajor = ghidraVersion.substringBefore('.')
 val ghidraRelease = ghidraProps.getProperty("application.release.name")!!
 
 java {
@@ -66,6 +67,19 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter-params")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("src/ghidra$ghidraVersionMajor/java")
+        }
+    }
+    test {
+        kotlin {
+            srcDir("src/testGhidra$ghidraVersionMajor/kotlin")
+        }
+    }
 }
 
 val generateExtensionProps by tasks.registering {

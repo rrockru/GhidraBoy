@@ -13,13 +13,13 @@
 // limitations under the License.
 package fi.gekkio.ghidraboy;
 
-import generic.hash.HashUtilities;
-
 import ghidra.app.util.bin.ByteProvider;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.regex.Pattern;
+
+import fi.gekkio.ghidraboy.HashBridge;
 
 public record Sha256(String value) {
     @Override
@@ -38,13 +38,13 @@ public record Sha256(String value) {
 
     public static Sha256 of(ByteProvider provider) throws IOException {
         try (var stream = provider.getInputStream(0)) {
-            return new Sha256(HashUtilities.getHash(HashUtilities.SHA256_ALGORITHM, stream));
+            return new Sha256(new HashBridge().getSha256Hash(stream));
         }
     }
 
     public static Sha256 of(byte[] bytes) throws IOException {
         try (var stream = new ByteArrayInputStream(bytes)) {
-            return new Sha256(HashUtilities.getHash(HashUtilities.SHA256_ALGORITHM, stream));
+            return new Sha256(new HashBridge().getSha256Hash(stream));
         }
     }
 }
